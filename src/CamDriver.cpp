@@ -4,6 +4,7 @@
 #include <pcl/common/transforms.h>
 
 #include "CamData.hpp"
+#include "CloudView.hpp"
 
 
 unsigned char buffer[1024 * 1024];
@@ -12,7 +13,7 @@ unsigned char buffer[1024 * 1024];
 // Choose depth image resolution
 #define DEPTHRESO TY_IMAGE_MODE_640x480
 
-// #define DepthReso TY_IMAGE_MODE_1280x960
+//#define DEPTHRESO TY_IMAGE_MODE_1280x960
 
 typedef pcl::PointXYZ                PointT;
 typedef pcl::PointCloud<PointT>      PointCloud;
@@ -33,7 +34,7 @@ void    GenPointCloud(cv::Mat        img,
 bool    UpdateDevPose(std::vector<HandleData>& handle_data);
 
 void    ConPoint3D(const std::vector<HandleData>& handle_data,
-                   PointCloudPtr                   & cloud_out);
+                   PointCloudPtr                & cloud_out);
 
 int count = 0;
 
@@ -64,8 +65,9 @@ int main(int argc, char *argv[]) {
   for (int i = 0; i < dev_num; ++i) {
     StartDevice(handle_data[i], pBaseInfo[i]);
 
-    handle_data[i].p_render   = new DepthRender();
-    handle_data[i].p_pcviewer = new PointCloudViewer();
+    handle_data[i].p_render = new DepthRender();
+
+    // handle_data[i].p_pcviewer = new PointCloudViewer();
   }
 
 
@@ -78,7 +80,7 @@ int main(int argc, char *argv[]) {
 
 
   PointCloudPtr cloud_ptr(new PointCloud);
-  PointCloudViewerImpl cloud_viewer;
+  CloudViewer   cloud_viewer;
 
   while (!exit_main) {
     for (int i = 0; i < handle_data.size(); i++) {
@@ -96,7 +98,7 @@ int main(int argc, char *argv[]) {
 
     ConPoint3D(handle_data, cloud_ptr);
 
-    cloud_viewer.show(cloud_ptr, "cloud");
+    cloud_viewer.show(cloud_ptr, "ConcatenatedCloud");
 
 
     // use keyboard to control picture collect
@@ -217,32 +219,43 @@ void FrameHandler(TY_FRAME_DATA *frame,
 
   char win[64];
 
-//  if (!depth.empty()) {
-//    cv::Mat colorDepth = pData->p_render->Compute(depth);
-//    sprintf(win, "depth-%s", pData->sn);
-//    cv::imshow(win, colorDepth);
+  if (!depth.empty()) {
+    cv::Mat colorDepth = pData->p_render->Compute(depth);
 
-    //    point = DepthToWorld(depth, pData->hDev);
+          cv::Point center(320, 240);
+
+//    cv::Point center(640, 480);
+          cv::circle(colorDepth, center, 10, cv::Scalar(0, 0, 255), 3);
+
+    sprintf(win, "depth-%s", pData->sn);
+    cv::imshow(win, colorDepth);
+
+    char file_name[64];
+    sprintf(file_name, "%s.bmp", pData->sn);
+    cv::imwrite(file_name, colorDepth);
+
+    //      point = DepthToWorld(depth, pData->hDev);
     //
-    //    pData->p_pcviewer->show(p3d, "Point3D");
+    //      pData->p_pcviewer->show(p3d, "Point3D");
     //
-    //    if (pData->p_pcviewer->isStopped("Point3D")) {
-    //        exit_main = true;
-    //      return;
-    //    }
-//  }
+    //      if (pData->p_pcviewer->isStopped("Point3D")) {
+    //          exit_main = true;
+    //        return;
+    //      }
+  }
 
   if (!p3d.empty()) {
     // Save 3d point image
     pData->point3d = p3d;
-//
-//    sprintf(win, "Point3D-%s", pData->sn);
-//    pData->p_pcviewer->show(p3d, win);
-//
-//    if (pData->p_pcviewer->isStopped(win)) {
-//      exit_main = true;
-//      return;
-//    }
+
+    //
+    //    sprintf(win, "Point3D-%s", pData->sn);
+    //    pData->p_pcviewer->show(p3d, win);
+    //
+    //    if (pData->p_pcviewer->isStopped(win)) {
+    //      exit_main = true;
+    //      return;
+    //    }
   }
 
   // if (!irl.empty()) {
@@ -304,22 +317,41 @@ bool UpdateDevPose(std::vector<HandleData>& handle_data) {
   for (int i = 0; i < handle_data.size(); ++i) {
     char *ch = handle_data[i].sn;
 
-    if (0 == strcmp("207000002038", handle_data[i].sn)) {
-      handle_data[i].dev_pose << 1, 0, 0, 0,
-              0, 1, 0, 0,
-              0, 0, 1, 0,
-              0, 0, 0, 1;
-    } else {
-      handle_data[i].dev_pose << 1, 0, 0, 720,
-              0, 1, 0, 0,
-              0, 0, 1, 0,
-              0, 0, 0, 1;
+    // if (0 == strcmp("207000002038", handle_data[i].sn)) {
+    //   handle_data[i].dev_pose << 1, 0, 0, 0,
+    //           0, 1, 0, 0,
+    //           0, 0, 1, 0,
+    //           0, 0, 0, 1;
+    // } else {
+    //   handle_data[i].dev_pose << 1, 0, 0, 720,
+    //           0, 1, 0, 0,
+    //           0, 0, 1, 0,
+    //           0, 0, 0, 1;
+    // }
+    if (0 == strcmp("207000001670", handle_data[i].sn)) {
+      handle_data[i].dev_pose = Eigen::Matrix4f::Identity();
+    }
+    else if (0 == strcmp("207000001678", handle_data[i].sn)) {
+      Eigen::Matrix4f trans_mat;
+
+      // trans_mat << 0.990809, 0.0197867, -0.133816, 1056.8,
+      //   -0.0163958, 0.999517, 0.0263955, 7.05489,
+      //   0.134274, -0.0239589, 0.990655, 62.7959,
+      //   0, 0, 0, 1;
+      trans_mat << 0.975401, 0.0319171, -0.218116, 1067.38,
+        -0.0257499, 0.999186, 0.0310601, -0.814528,
+        0.218929, -0.0246796, 0.975429, 66.6778,
+        0, 0, 0, 1;
+
+      handle_data[i].dev_pose = trans_mat.inverse();
     }
   }
   return true;
 }
 
 void GenPointCloud(cv::Mat img, PointCloudPtr& cloud_ptr) {
+  cloud_ptr->clear();
+
   int n       = img.rows * img.cols;
   float *data = (float *)img.data;
 
@@ -327,14 +359,28 @@ void GenPointCloud(cv::Mat img, PointCloudPtr& cloud_ptr) {
     cloud_ptr->push_back(PointT(data[i * 3 + 0], data[i * 3 + 1],
                                 data[i * 3 + 2]));
   }
+
+  float x = img.at<cv::Vec3f>(240, 320)[0];
+  float y = img.at<cv::Vec3f>(240, 320)[1];
+  float z = img.at<cv::Vec3f>(240, 320)[2];
+
+//  float x = img.at<cv::Vec3f>(480, 640)[0];
+//  float y = img.at<cv::Vec3f>(480, 640)[1];
+//  float z = img.at<cv::Vec3f>(480, 640)[2];
+
+
+  std::cout << "the center point is: ( " << x << ", " << y << ", " << z << " )" <<
+    std::endl;
+
+  //  std::cout << "The depth img center point is: " << center_point <<
+  // std::endl;
 }
 
 void ConPoint3D(const std::vector<HandleData>& handle_data,
-                PointCloudPtr                   & cloud_out) {
+                PointCloudPtr                & cloud_out) {
   cloud_out->clear();
 
-  Eigen::Matrix4f trans_mat;
-  PointCloudPtr   trans_cloud(new PointCloud);
+  PointCloudPtr trans_cloud(new PointCloud);
 
   for (int i = 0; i < handle_data.size(); ++i) {
     trans_cloud->clear();
@@ -345,10 +391,11 @@ void ConPoint3D(const std::vector<HandleData>& handle_data,
 
     for (int j = 0; j < trans_cloud->size(); ++j) {
       cloud_out->push_back(trans_cloud->at(j));
-        std::cout << "the point cloud before transform is: " << cloud_ptr->at(j) << std::endl;
     }
   }
 }
+
+void SaveCloud() {}
 
 // void ConP3d(const HandleData                   & handle_data,
 //            pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud) {
