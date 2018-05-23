@@ -1,6 +1,6 @@
 #include <pcl/io/pcd_io.h>
 
-#include "CloudViewer.hpp"
+#include "CloudView.hpp"
 
 class PCDHandler {
 public:
@@ -18,10 +18,10 @@ private:
 
 public:
 
-  PCDHandler() : m_cloud_ptr(new CloudPtrT) {}
+  PCDHandler() : m_cloud_ptr(new CloudT) {}
 
   ~PCDHandler() {
-    delete m_cloud_ptr;
+    // delete m_cloud_ptr;
   }
 
   bool PCDRead(const std::string& file_name, CloudPtrT& cloud_ptr) {

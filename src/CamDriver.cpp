@@ -5,15 +5,17 @@
 
 #include "CamData.hpp"
 #include "CloudView.hpp"
+#include "PCDHandler.hpp"
+#include "FileHandler.hpp"
 
 
 unsigned char buffer[1024 * 1024];
-#define OPENRGB 0
+#define OPENRGB 1
 
 // Choose depth image resolution
 #define DEPTHRESO TY_IMAGE_MODE_640x480
 
-//#define DEPTHRESO TY_IMAGE_MODE_1280x960
+// #define DEPTHRESO TY_IMAGE_MODE_1280x960
 
 typedef pcl::PointXYZ                PointT;
 typedef pcl::PointCloud<PointT>      PointCloud;
@@ -39,6 +41,7 @@ void    ConPoint3D(const std::vector<HandleData>& handle_data,
 int count = 0;
 
 bool exit_main = false;
+bool save_flag = false;
 
 int main(int argc, char *argv[]) {
   // Device number
@@ -67,7 +70,7 @@ int main(int argc, char *argv[]) {
 
     handle_data[i].p_render = new DepthRender();
 
-    // handle_data[i].p_pcviewer = new PointCloudViewer();
+    handle_data[i].p_pcviewer = new PointCloudViewer();
   }
 
 
@@ -81,6 +84,7 @@ int main(int argc, char *argv[]) {
 
   PointCloudPtr cloud_ptr(new PointCloud);
   CloudViewer   cloud_viewer;
+  PCDHandler    pcd_handler;
 
   while (!exit_main) {
     for (int i = 0; i < handle_data.size(); i++) {
@@ -96,10 +100,41 @@ int main(int argc, char *argv[]) {
       FrameHandler(&frame, &handle_data[i]);
     }
 
+    // for display
     ConPoint3D(handle_data, cloud_ptr);
-
     cloud_viewer.show(cloud_ptr, "ConcatenatedCloud");
 
+    cv::Mat depth_img = handle_data[0].depth;
+    cv::Point center(320, 240);
+
+    //    cv::Point center(640, 480);
+    cv::circle(depth_img, center, 10, cv::Scalar(0, 0, 255), 3);
+
+    char win[40];
+    sprintf(win, "depth-%s", handle_data[0].sn);
+    cv::imshow(win, depth_img);
+
+    // cv::Mat img;1
+    // cv::imshow("WaitKey", handle_data[0].point3d);
+
+
+    if (true == save_flag) {
+      std::string time_stamp      = getTimeStamp();
+      std::string pcd_file_name   = time_stamp + ".pcd";
+      std::string depth_file_name = time_stamp + "_depth.bmp";
+      std::string color_file_name = time_stamp + "_color.bmp";
+
+      pcd_handler.PCDWrite(*cloud_ptr, pcd_file_name);
+
+      cv::imwrite(depth_file_name, handle_data[0].depth);
+      cv::imwrite(color_file_name, handle_data[0].color);
+
+      //    char file_name[64];
+      //    sprintf(file_name, "%s.bmp", pData->sn);
+      //    cv::imwrite(file_name, colorDepth);
+
+      save_flag = false;
+    }
 
     // use keyboard to control picture collect
     int key = cv::waitKey(1);
@@ -110,6 +145,10 @@ int main(int argc, char *argv[]) {
 
     case 'q':
       exit_main = true;
+      break;
+
+    case 's':
+      save_flag = true;
       break;
 
     default:
@@ -215,24 +254,29 @@ void FrameHandler(TY_FRAME_DATA *frame,
   cv::Mat point;
 
 
-  parseFrame(*frame, &depth, 0, 0, 0, &p3d);
+  parseFrame(*frame, &depth, 0, 0, &color, &p3d);
 
   char win[64];
 
+  if (!color.empty()){
+    pData->color = color;
+  }
+
   if (!depth.empty()) {
     cv::Mat colorDepth = pData->p_render->Compute(depth);
+      pData->depth = colorDepth;
 
-          cv::Point center(320, 240);
+//    cv::Point center(320, 240);
+//
+//    //    cv::Point center(640, 480);
+//    cv::circle(colorDepth, center, 10, cv::Scalar(0, 0, 255), 3);
+//
+//    sprintf(win, "depth-%s", pData->sn);
+//    cv::imshow(win, colorDepth);
 
-//    cv::Point center(640, 480);
-          cv::circle(colorDepth, center, 10, cv::Scalar(0, 0, 255), 3);
-
-    sprintf(win, "depth-%s", pData->sn);
-    cv::imshow(win, colorDepth);
-
-    char file_name[64];
-    sprintf(file_name, "%s.bmp", pData->sn);
-    cv::imwrite(file_name, colorDepth);
+    //    char file_name[64];
+    //    sprintf(file_name, "%s.bmp", pData->sn);
+    //    cv::imwrite(file_name, colorDepth);
 
     //      point = DepthToWorld(depth, pData->hDev);
     //
@@ -364,9 +408,9 @@ void GenPointCloud(cv::Mat img, PointCloudPtr& cloud_ptr) {
   float y = img.at<cv::Vec3f>(240, 320)[1];
   float z = img.at<cv::Vec3f>(240, 320)[2];
 
-//  float x = img.at<cv::Vec3f>(480, 640)[0];
-//  float y = img.at<cv::Vec3f>(480, 640)[1];
-//  float z = img.at<cv::Vec3f>(480, 640)[2];
+  //  float x = img.at<cv::Vec3f>(480, 640)[0];
+  //  float y = img.at<cv::Vec3f>(480, 640)[1];
+  //  float z = img.at<cv::Vec3f>(480, 640)[2];
 
 
   std::cout << "the center point is: ( " << x << ", " << y << ", " << z << " )" <<

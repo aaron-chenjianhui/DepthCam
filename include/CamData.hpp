@@ -31,6 +31,8 @@ struct HandleData {
 
 
   cv::Mat point3d;
+  cv::Mat color;
+  cv::Mat depth;
 
   DepthRender *p_render;
 
