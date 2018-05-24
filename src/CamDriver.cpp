@@ -8,8 +8,12 @@
 #include "PCDHandler.hpp"
 #include "FileHandler.hpp"
 
+#include "DepthDevice.hpp"
 
-unsigned char buffer[1024 * 1024];
+
+// unsigned char buffer[1024 * 1024];
+
+unsigned char buffer[sizeof(TY_DEVICE_BASE_INFO) * 5];
 #define OPENRGB 1
 
 // Choose depth image resolution
@@ -104,7 +108,7 @@ int main(int argc, char *argv[]) {
     ConPoint3D(handle_data, cloud_ptr);
     cloud_viewer.show(cloud_ptr, "ConcatenatedCloud");
 
-    cv::Mat depth_img = handle_data[0].depth;
+    cv::Mat   depth_img = handle_data[0].depth;
     cv::Point center(320, 240);
 
     //    cv::Point center(640, 480);
@@ -204,12 +208,9 @@ void StartDevice(HandleData              & cam,
 
   // open depth camera
   LOGD("=== Configure components, open depth cam");
-  int32_t componentIDs = TY_COMPONENT_DEPTH_CAM;
-  ASSERT_OK(TYEnableComponents(cam.hDev, componentIDs));
+  ASSERT_OK(TYEnableComponents(cam.hDev, TY_COMPONENT_DEPTH_CAM));
 
   LOGD("=== Configure components, open point3d cam");
-
-  // int32_t componentIDs = TY_COMPONENT_POINT3D_CAM;
   ASSERT_OK(TYEnableComponents(cam.hDev, TY_COMPONENT_POINT3D_CAM));
 
   LOGD("=== Configure feature, set resolution to 640x480.");
@@ -258,21 +259,21 @@ void FrameHandler(TY_FRAME_DATA *frame,
 
   char win[64];
 
-  if (!color.empty()){
+  if (!color.empty()) {
     pData->color = color;
   }
 
   if (!depth.empty()) {
     cv::Mat colorDepth = pData->p_render->Compute(depth);
-      pData->depth = colorDepth;
+    pData->depth = colorDepth;
 
-//    cv::Point center(320, 240);
-//
-//    //    cv::Point center(640, 480);
-//    cv::circle(colorDepth, center, 10, cv::Scalar(0, 0, 255), 3);
-//
-//    sprintf(win, "depth-%s", pData->sn);
-//    cv::imshow(win, colorDepth);
+    //    cv::Point center(320, 240);
+    //
+    //    //    cv::Point center(640, 480);
+    //    cv::circle(colorDepth, center, 10, cv::Scalar(0, 0, 255), 3);
+    //
+    //    sprintf(win, "depth-%s", pData->sn);
+    //    cv::imshow(win, colorDepth);
 
     //    char file_name[64];
     //    sprintf(file_name, "%s.bmp", pData->sn);
