@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 
+set(CMAKE_CXX_STANDARD 11)
+
 set(CMAKE_BUILD_TYPE Debug)
+#set(CMAKE_BUILD_TYPE Release)
 
 set(INCLUDE_PATH include)
 set(TARGET_LIB tycam)
@@ -8,9 +11,10 @@ set(TARGET_LIB tycam)
 
 #set(SRC_LISTS src/depthcam.cpp)
 set(EXE_LISTS
-multidev
-depthcam
-CamDriver)
+#multidev
+#depthcam
+#CamDriver
+test_pcd)
 #set(SRC_LISTS
 #        src/multidev.cpp
 #        src/depthcam.cpp)
