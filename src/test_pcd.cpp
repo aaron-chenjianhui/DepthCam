@@ -16,17 +16,18 @@ int main(int argc, char *argv[])
 	CloudViewer cloud_viewer;
 	PCDHandler pcd_handler;
 
-	pcd_handler.PCDRead("../../data/2018_4_24_15_15_26.pcd", cloud_ptr);
-
-	while(1){
-		cloud_viewer.show(cloud_ptr, "cloud_show");
-	}
+//	pcd_handler.PCDRead("../../data/2018_4_24_15_15_26.pcd", cloud_ptr);
 //
-//	while (1) {
-//		depth_device.getConPointCloud(cloud_ptr);
-//		cloud_viewer.show(cloud_ptr, "test");
-//		pcd_handler.PCDWrite(cloud_ptr, "test.pcd");
+//	while(1){
+//		cloud_viewer.show(cloud_ptr, "cloud_show");
 //	}
+
+	while (1) {
+//		depth_device.getConPointCloud(cloud_ptr);
+        depth_device.getPointCloud("207000002571", cloud_ptr);
+		cloud_viewer.show(cloud_ptr, "test");
+//		pcd_handler.PCDWrite(cloud_ptr, "test.pcd");
+	}
 
 
 

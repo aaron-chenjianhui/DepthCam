@@ -264,6 +264,9 @@ bool getPointCloud(const std::string sn, CloudPtrT& cloud)
 		LOGD("cam %s %d ... Drop one frame", m_handle_data[dev_index].sn,
 		     m_handle_data[dev_index].idx);
 
+	LOGD("=== Callback: Re-enqueue buffer(%p, %d)", frame.userBuffer, frame.bufferSize);
+    ASSERT_OK( TYEnqueueBuffer(m_handle_data[dev_index].hDev, frame.userBuffer, frame.bufferSize) );
+
 	parseFrame(frame, 0, 0, 0, 0, &p3d);
 	if (!p3d.empty()) {
 		m_handle_data[dev_index].point3d = p3d;
